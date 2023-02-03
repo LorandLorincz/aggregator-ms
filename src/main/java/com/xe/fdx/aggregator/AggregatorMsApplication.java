@@ -1,4 +1,4 @@
-package com.xe.fdx.aggregatorms;
+package com.xe.fdx.aggregator;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
