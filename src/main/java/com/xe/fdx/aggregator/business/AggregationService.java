@@ -1,10 +1,11 @@
 package com.xe.fdx.aggregator.business;
 
 import com.xe.fdx.aggregator.external.ShipmentsApi;
+import com.xe.fdx.aggregator.external.TrackApi;
+import com.xe.fdx.aggregator.model.TrackStatus;
 import com.xe.fdx.aggregator.model.Aggregation;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,13 +19,15 @@ import reactor.util.function.Tuples;
 public class AggregationService {
 
   public final ShipmentsApi shipmentsApi;
+  public final TrackApi trackApi;
 
   public Mono<Aggregation> getAggregation(List<String> shipmentsOrderNumbers,
       List<String> trackOrderNumbers, List<String> pricingCountryCodes) {
-    return getShipmentsList(shipmentsOrderNumbers).map(
-        s -> new Aggregation(s.stream()
+    return Mono.zip(getShipmentsList(shipmentsOrderNumbers), getTrackStatus(trackOrderNumbers)).map(
+        t2 -> new Aggregation(t2.getT1().stream()
             .collect(Collectors.toMap(Tuple2::getT1, Tuple2::getT2)),
-            Collections.emptyMap(),
+            t2.getT2().stream()
+                .collect(Collectors.toMap(Tuple2::getT1, Tuple2::getT2)),
             Collections.emptyMap()));
   }
 
@@ -32,6 +35,13 @@ public class AggregationService {
       List<String> shipmentsOrderNumbers) {
     return Flux.fromIterable(shipmentsOrderNumbers)
         .flatMap(o -> shipmentsApi.getShipments(o).map(l -> Tuples.of(o, l)))
+        .collectList();
+  }
+
+  private Mono<List<Tuple2<String, TrackStatus>>> getTrackStatus(
+      List<String> trackOrderNumbers) {
+    return Flux.fromIterable(trackOrderNumbers)
+        .flatMap(o -> trackApi.getTrackingStatus(o).map(l -> Tuples.of(o, l)))
         .collectList();
   }
 }
