@@ -11,6 +11,7 @@ import com.xe.fdx.aggregator.model.Aggregation;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import javax.naming.ServiceUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -114,6 +115,27 @@ class AggregatorServiceTest {
         List.of("000000001"),
         List.of("000000003"),
         List.of("NL", "DE"));
+
+    StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
+  }
+
+  @Test
+  void getAggregateWhenGetShipmentsTimesOut() {
+    when(shipmentsApi.getShipments("000000001")).thenReturn(Mono.just(List.of("BOX", "PALLET")));
+    when(shipmentsApi.getShipments("000000002")).thenReturn(
+        Mono.error(new TimeoutException("API call exceeded the timeout")));
+    when(trackApi.getTrackingStatus("000000003")).thenReturn(Mono.just(COLLECTING));
+    when(pricingApi.getPricing("NL")).thenReturn(Mono.just(BigDecimal.valueOf(12.24)));
+
+    Aggregation expected = new Aggregation(
+        Map.of("000000001", List.of("BOX", "PALLET")),
+        Map.of("000000003", COLLECTING),
+        Map.of("NL", BigDecimal.valueOf(12.24)));
+
+    Mono<Aggregation> aggregation = aggregationService.getAggregation(
+        List.of("000000001", "000000002"),
+        List.of("000000003"),
+        List.of("NL"));
 
     StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
   }

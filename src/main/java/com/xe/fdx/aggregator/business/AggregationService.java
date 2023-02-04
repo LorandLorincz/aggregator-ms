@@ -6,6 +6,7 @@ import com.xe.fdx.aggregator.external.TrackApi;
 import com.xe.fdx.aggregator.model.Aggregation;
 import com.xe.fdx.aggregator.model.TrackStatus;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class AggregationService {
   private Mono<List<Tuple2<String, List<String>>>> getShipmentsFlux(
       List<String> shipmentsOrderNumbers) {
     return Flux.fromIterable(shipmentsOrderNumbers)
-        .flatMap(o -> shipmentsApi.getShipments(o).doOnError(
+        .flatMap(o -> shipmentsApi.getShipments(o).timeout(Duration.ofSeconds(5)).doOnError(
                 e -> log.info("Failed to get shipment status for {}. Error was: {}", o, e.getMessage()))
             .onErrorResume(e -> Mono.empty())
             .map(l -> Tuples.of(o, l)))
@@ -51,7 +52,7 @@ public class AggregationService {
   private Mono<List<Tuple2<String, TrackStatus>>> getTrackStatusFlux(
       List<String> trackOrderNumbers) {
     return Flux.fromIterable(trackOrderNumbers)
-        .flatMap(o -> trackApi.getTrackingStatus(o).doOnError(
+        .flatMap(o -> trackApi.getTrackingStatus(o).timeout(Duration.ofSeconds(5)).doOnError(
                 e -> log.info("Failed to get tracking status for {}. Error was: {}", o, e.getMessage()))
             .onErrorResume(e -> Mono.empty())
             .map(l -> Tuples.of(o, l)))
@@ -61,9 +62,8 @@ public class AggregationService {
   private Mono<List<Tuple2<String, BigDecimal>>> getPricingFlux(
       List<String> countryCodes) {
     return Flux.fromIterable(countryCodes)
-        .flatMap(c -> pricingApi.getPricing(c).doOnError(
+        .flatMap(c -> pricingApi.getPricing(c).timeout(Duration.ofSeconds(5)).doOnError(
                 e -> log.info("Failed to get pricing for {}. Error was: {}", c, e.getMessage()))
-            .onErrorResume(e -> Mono.empty())
             .onErrorResume(e -> Mono.empty()).map(l -> Tuples.of(c, l)))
         .collectList();
   }
