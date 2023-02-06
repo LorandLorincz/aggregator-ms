@@ -139,4 +139,46 @@ class AggregatorServiceTest {
 
     StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
   }
+
+  @Test
+  void getAggregateWhenGetTrackingTimesOut() {
+    when(shipmentsApi.getShipments("000000001")).thenReturn(Mono.just(List.of("BOX", "PALLET")));
+    when(trackApi.getTrackingStatus("000000003")).thenReturn(Mono.just(COLLECTING));
+    when(trackApi.getTrackingStatus("000000004")).thenReturn(
+        Mono.error(new TimeoutException("API call exceeded the timeout")));
+    when(pricingApi.getPricing("NL")).thenReturn(Mono.just(BigDecimal.valueOf(12.24)));
+
+    Aggregation expected = new Aggregation(
+        Map.of("000000001", List.of("BOX", "PALLET")),
+        Map.of("000000003", COLLECTING),
+        Map.of("NL", BigDecimal.valueOf(12.24)));
+
+    Mono<Aggregation> aggregation = aggregationService.getAggregation(
+        List.of("000000001"),
+        List.of("000000003", "000000004"),
+        List.of("NL"));
+
+    StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
+  }
+
+  @Test
+  void getAggregateWhenGetPricingTimesOut() {
+    when(shipmentsApi.getShipments("000000001")).thenReturn(Mono.just(List.of("BOX", "PALLET")));
+    when(trackApi.getTrackingStatus("000000003")).thenReturn(Mono.just(COLLECTING));
+    when(pricingApi.getPricing("NL")).thenReturn(Mono.just(BigDecimal.valueOf(12.24)));
+    when(pricingApi.getPricing("DE")).thenReturn(
+        Mono.error(new TimeoutException("API call exceeded the timeout")));
+
+    Aggregation expected = new Aggregation(
+        Map.of("000000001", List.of("BOX", "PALLET")),
+        Map.of("000000003", COLLECTING),
+        Map.of("NL", BigDecimal.valueOf(12.24)));
+
+    Mono<Aggregation> aggregation = aggregationService.getAggregation(
+        List.of("000000001"),
+        List.of("000000003"),
+        List.of("NL", "DE"));
+
+    StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
+  }
 }
