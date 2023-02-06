@@ -20,9 +20,9 @@ public class AggregatorController {
 
     @GetMapping
     public Mono<Aggregation> getAggregation(
-        @RequestParam(required = false) List<String> shipmentsOrderNumbers,
-        @RequestParam(required = false) List<String> trackOrderNumbers,
-        @RequestParam(required = false) List<String> pricingCountryCodes) {
+        @RequestParam(required = false, defaultValue = "") List<String> shipmentsOrderNumbers,
+        @RequestParam(required = false, defaultValue = "") List<String> trackOrderNumbers,
+        @RequestParam(required = false, defaultValue = "") List<String> pricingCountryCodes) {
         return aggregationService.getAggregation(shipmentsOrderNumbers, trackOrderNumbers,
             pricingCountryCodes);
     }

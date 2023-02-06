@@ -9,6 +9,7 @@ import com.xe.fdx.aggregator.external.ShipmentsApi;
 import com.xe.fdx.aggregator.external.TrackApi;
 import com.xe.fdx.aggregator.model.Aggregation;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -178,6 +179,60 @@ class AggregatorServiceTest {
         List.of("000000001"),
         List.of("000000003"),
         List.of("NL", "DE"));
+
+    StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
+  }
+
+  @Test
+  void getAggregateWhenGetShipmentIsEmpty() {
+    when(trackApi.getTrackingStatus("000000003")).thenReturn(Mono.just(COLLECTING));
+    when(pricingApi.getPricing("NL")).thenReturn(Mono.just(BigDecimal.valueOf(12.24)));
+
+    Aggregation expected = new Aggregation(
+        Collections.emptyMap(),
+        Map.of("000000003", COLLECTING),
+        Map.of("NL", BigDecimal.valueOf(12.24)));
+
+    Mono<Aggregation> aggregation = aggregationService.getAggregation(
+        Collections.emptyList(),
+        List.of("000000003"),
+        List.of("NL"));
+
+    StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
+  }
+
+  @Test
+  void getAggregateWhenGetTrackingIsEmpty() {
+    when(shipmentsApi.getShipments("000000001")).thenReturn(Mono.just(List.of("BOX", "PALLET")));
+    when(pricingApi.getPricing("NL")).thenReturn(Mono.just(BigDecimal.valueOf(12.24)));
+
+    Aggregation expected = new Aggregation(
+        Map.of("000000001", List.of("BOX", "PALLET")),
+        Collections.emptyMap(),
+        Map.of("NL", BigDecimal.valueOf(12.24)));
+
+    Mono<Aggregation> aggregation = aggregationService.getAggregation(
+        List.of("000000001"),
+        Collections.emptyList(),
+        List.of("NL"));
+
+    StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
+  }
+
+  @Test
+  void getAggregateWhenGetPricingIsEmpty() {
+    when(shipmentsApi.getShipments("000000001")).thenReturn(Mono.just(List.of("BOX", "PALLET")));
+    when(trackApi.getTrackingStatus("000000003")).thenReturn(Mono.just(COLLECTING));
+
+    Aggregation expected = new Aggregation(
+        Map.of("000000001", List.of("BOX", "PALLET")),
+        Map.of("000000003", COLLECTING),
+        Collections.emptyMap());
+
+    Mono<Aggregation> aggregation = aggregationService.getAggregation(
+        List.of("000000001"),
+        List.of("000000003"),
+        Collections.emptyList());
 
     StepVerifier.create(aggregation).expectNext(expected).expectComplete().verify();
   }

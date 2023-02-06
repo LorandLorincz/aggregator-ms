@@ -1,6 +1,5 @@
 package com.xe.fdx.aggregator.external;
 
-import com.xe.fdx.aggregator.model.TrackStatus;
 import java.math.BigDecimal;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -21,7 +20,6 @@ public class PricingApi {
         .uri(b -> b.path("/pricing").queryParam("countryCode", countryCode).build())
         .accept(MediaType.APPLICATION_JSON)
         .retrieve()
-        .bodyToMono(BigDecimal.class)
-        .doOnNext(s -> System.out.println(s));
+        .bodyToMono(BigDecimal.class);
   }
 }

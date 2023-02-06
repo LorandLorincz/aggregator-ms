@@ -20,7 +20,6 @@ public class TrackApi {
         .uri(b -> b.path("/track-status").queryParam("orderNumber", orderNumber).build())
         .accept(MediaType.APPLICATION_JSON)
         .retrieve()
-        .bodyToMono(TrackStatus.class)
-        .doOnNext(s -> System.out.println(s));
+        .bodyToMono(TrackStatus.class);
   }
 }

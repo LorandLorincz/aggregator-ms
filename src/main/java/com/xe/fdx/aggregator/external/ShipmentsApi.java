@@ -22,6 +22,6 @@ public class ShipmentsApi {
         .accept(MediaType.APPLICATION_JSON)
         .retrieve()
         .bodyToMono(new ParameterizedTypeReference<List<String>>() {
-        }).doOnNext(s -> System.out.println(s));
+        });
   }
 }
